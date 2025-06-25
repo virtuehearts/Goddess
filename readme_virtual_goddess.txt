@@ -39,6 +39,7 @@ This platform is a digital temple. Seekers can log in, chat with the Virtual God
 - Session handling & protected routes
 
 ### 💰 Digital Treasury
+- Dedicated page with wallet addresses
 - BTC, ETH, and SOL donation display with copy buttons
 - Logs all donation actions (optional future: transaction validation)
 
