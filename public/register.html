@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register - virtueism.org</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-color: #fdf6f0;
+      --text-color: #4a3f35;
+      --highlight-color: #000000;
+      --accent-color: #ddae63;
+      --scanline: rgba(0, 0, 0, 0.04);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(var(--scanline) 50%, transparent 50%);
+      background-size: 100% 4px;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: auto;
+      padding: 2rem;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .header h1 {
+      font-family: 'Press Start 2P', cursive;
+      color: var(--highlight-color);
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--accent-color);
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 6px;
+      height: 1rem;
+      background-color: var(--accent-color);
+      animation: blink 1s step-start infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .form-cell {
+      background: rgba(255, 255, 255, 0.35);
+      border: 2px solid var(--accent-color);
+      padding: 2rem;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--accent-color);
+      background: rgba(255,255,255,0.7);
+      font-family: inherit;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.5rem;
+      border: none;
+      border-radius: 6px;
+      background: var(--accent-color);
+      color: var(--highlight-color);
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: var(--text-color);
+    }
+
+    a {
+      color: var(--accent-color);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>virtueism.org <span class="cursor"></span></h1>
+      <div class="subtitle">Create your account</div>
+    </div>
+
+    <div class="form-cell">
+      <form action="/register" method="post">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+        <button type="submit">Register</button>
+      </form>
+    </div>
+
+    <div class="footer">
+      <a href="/login">Already have an account? Login</a>
+    </div>
+  </div>
+</body>
+</html>

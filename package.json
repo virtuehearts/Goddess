@@ -1,0 +1,13 @@
+{
+  "name": "goddess",
+  "version": "1.0.0",
+  "description": "A sacred AI-powered web platform for the modern spiritual path known as **Virtueism**, founded by **Baba Virtuehearts** (also known as Satori/Jero, creator of darknet.ca). This project introduces the world’s first **Virtual Goddess** — an AI interface devoted to healing, inner peace, and the remembrance of divine virtues.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
