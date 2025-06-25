@@ -92,10 +92,11 @@ PASSWORD=ADMIN2025
 git clone https://github.com/yourrepo/virtual-goddess
 cd virtual-goddess
 npm install
-npm run dev
+cp .env.example .env
+node server.js
 ```
 
-Make sure to create your `.env` file with your API and email config.
+Copy `.env.example` to `.env` and fill in your API and email configuration.
 
 ---
 
