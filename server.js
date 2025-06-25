@@ -70,6 +70,10 @@ app.get('/chat', ensureAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
 });
 
+app.get('/treasury', ensureAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'treasury.html'));
+});
+
 app.post('/chat', ensureAuth, async (req, res) => {
   const userId = req.session.userId;
   const userMessage = req.body.message;
