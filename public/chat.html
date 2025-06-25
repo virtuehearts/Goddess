@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat - virtueism.org</title>
+</head>
+<body>
+  <div id="messages"></div>
+  <form id="chatForm">
+    <input type="text" id="msg" autocomplete="off" required>
+    <button type="submit">Send</button>
+  </form>
+  <script>
+    const form = document.getElementById('chatForm');
+    const messages = document.getElementById('messages');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = document.getElementById('msg').value;
+      messages.innerHTML += `<div>You: ${text}</div>`;
+      document.getElementById('msg').value='';
+      const res = await fetch('/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message:text})});
+      const data = await res.json();
+      messages.innerHTML += `<div>Goddess: ${data.reply}</div>`;
+    });
+  </script>
+</body>
+</html>
