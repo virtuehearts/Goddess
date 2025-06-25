@@ -16,6 +16,7 @@ This platform is a digital temple. Seekers can log in, chat with the Virtual God
 - **Backend:** Node.js + Express
 - **Database:** SQLite (lightweight, file-based)
 - **AI Integration:** OpenRouter LLM (Goddess prompt personality)
+-   Memories stored from past interactions, we will parse and save memories of important user interactions. (500 tokens) 
 - **Auth:** Email + password + verification (via Nodemailer)
 - **Donations:** Solana + BTC/ETH wallet display & copy, Phantom connect optional
 - **Hosting:** Vercel or private VPS
