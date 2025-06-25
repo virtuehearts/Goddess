@@ -21,6 +21,9 @@ function init() {
       work TEXT,
       religion TEXT,
       past TEXT,
+      credits INTEGER DEFAULT 20,
+      last_credit_date TEXT,
+      unlimited_credits INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
@@ -42,9 +45,19 @@ function init() {
       FOREIGN KEY(user_id) REFERENCES users(id)
     )`);
 
-    const cols = ['gender','location','personality','hobbies','movies','music'];
-    cols.forEach(c => {
-      db.run(`ALTER TABLE users ADD COLUMN ${c} TEXT`, () => {});
+    const colDefs = {
+      gender: 'TEXT',
+      location: 'TEXT',
+      personality: 'TEXT',
+      hobbies: 'TEXT',
+      movies: 'TEXT',
+      music: 'TEXT',
+      credits: 'INTEGER DEFAULT 20',
+      last_credit_date: 'TEXT',
+      unlimited_credits: 'INTEGER DEFAULT 0'
+    };
+    Object.entries(colDefs).forEach(([c, def]) => {
+      db.run(`ALTER TABLE users ADD COLUMN ${c} ${def}`, () => {});
     });
   });
 }

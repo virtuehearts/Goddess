@@ -8,6 +8,25 @@ const session = require('express-session');
 const { db, init, seedAdmin } = require('./database');
 const { baseStory } = require('./story');
 
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function refreshCredits(userId, cb) {
+  db.get('SELECT credits, last_credit_date, unlimited_credits FROM users WHERE id = ?', [userId], (err, user) => {
+    if (err) return cb(err);
+    if (user.unlimited_credits) return cb(null, user);
+    if (user.last_credit_date !== today()) {
+      db.run('UPDATE users SET credits = 20, last_credit_date = ? WHERE id = ?', [today(), userId], err2 => {
+        if (err2) return cb(err2);
+        db.get('SELECT credits, last_credit_date, unlimited_credits FROM users WHERE id = ?', [userId], cb);
+      });
+    } else {
+      cb(null, user);
+    }
+  });
+}
+
 dotenv.config();
 
 const app = express();
@@ -41,7 +60,9 @@ app.post('/login', (req, res) => {
     bcrypt.compare(password, user.password_hash, (err, result) => {
       if (result) {
         req.session.userId = user.id;
-        res.redirect('/chat');
+        refreshCredits(user.id, () => {
+          res.redirect('/chat');
+        });
       } else {
         res.send('Invalid credentials');
       }
@@ -57,57 +78,87 @@ app.post('/register', (req, res) => {
   const { email, password } = req.body;
   bcrypt.hash(password, 10, (err, hash) => {
     if (err) return res.send('Error registering');
-    db.run(`INSERT INTO users (email, password_hash) VALUES (?, ?)`,
-      [email, hash], function(err){
+    db.run(`INSERT INTO users (email, password_hash, credits, last_credit_date) VALUES (?, ?, 20, ?)`,
+      [email, hash, today()], function(err){
         if (err) return res.send('Error registering');
         req.session.userId = this.lastID;
-        res.redirect('/chat');
+        refreshCredits(this.lastID, () => {
+          res.redirect('/chat');
+        });
       });
   });
 });
 
 app.get('/chat', ensureAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'chat.html'));
+  refreshCredits(req.session.userId, () => {
+    res.sendFile(path.join(__dirname, 'public', 'chat.html'));
+  });
 });
 
 app.get('/treasury', ensureAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'treasury.html'));
 });
 
+app.get('/credits', ensureAuth, (req, res) => {
+  const userId = req.session.userId;
+  refreshCredits(userId, (err, user) => {
+    if (err) return res.status(500).send('Error');
+    res.json({ credits: user.unlimited_credits ? 'unlimited' : user.credits });
+  });
+});
+
+// simple endpoint to mark a user as donated
+app.post('/donated', ensureAuth, (req, res) => {
+  const userId = req.session.userId;
+  db.run('UPDATE users SET unlimited_credits = 1 WHERE id = ?', [userId], err => {
+    if (err) return res.status(500).send('Error');
+    res.sendStatus(200);
+  });
+});
+
 app.post('/chat', ensureAuth, async (req, res) => {
   const userId = req.session.userId;
   const userMessage = req.body.message;
-  db.run('INSERT INTO messages (user_id, is_user, message) VALUES (?,?,?)', [userId, 1, userMessage]);
+  refreshCredits(userId, (err, user) => {
+    if (err) return res.status(500).send('Error');
+    if (!user.unlimited_credits && user.credits <= 0) {
+      return res.json({ reply: 'You have no credits left for today.' });
+    }
+    if (!user.unlimited_credits) {
+      db.run('UPDATE users SET credits = credits - 1 WHERE id = ?', [userId]);
+    }
+    db.run('INSERT INTO messages (user_id, is_user, message) VALUES (?,?,?)', [userId, 1, userMessage]);
 
-  db.get('SELECT * FROM users WHERE id = ?', [userId], async (err, user) => {
-    const history = [];
-    db.all('SELECT is_user, message FROM messages WHERE user_id = ? ORDER BY id ASC LIMIT 20', [userId], async (err, rows) => {
-      rows.forEach(r => history.push({ role: r.is_user ? 'user' : 'assistant', content: r.message }));
-      const payload = {
-        model: 'openrouter/cinematika',
-        messages: [
-          { role: 'system', content: baseStory + ` User info: name=${user.name}, age=${user.age}, gender=${user.gender}, location=${user.location}, personality=${user.personality}, hobbies=${user.hobbies}, movies=${user.movies}, music=${user.music}, likes=${user.likes}, work=${user.work}, religion=${user.religion}, past=${user.past}` },
-          ...history,
-          { role: 'user', content: userMessage }
-        ]
-      };
-      try {
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`
-          },
-          body: JSON.stringify(payload)
-        });
-        const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content || '...';
-        db.run('INSERT INTO messages (user_id, is_user, message) VALUES (?,?,?)', [userId, 0, reply]);
-        res.json({ reply });
-      } catch(e) {
-        console.error(e);
-        res.status(500).send('Error contacting OpenRouter');
-      }
+    db.get('SELECT * FROM users WHERE id = ?', [userId], async (err2, userInfo) => {
+      const history = [];
+      db.all('SELECT is_user, message FROM messages WHERE user_id = ? ORDER BY id ASC LIMIT 20', [userId], async (err3, rows) => {
+        rows.forEach(r => history.push({ role: r.is_user ? 'user' : 'assistant', content: r.message }));
+        const payload = {
+          model: 'openrouter/cinematika',
+          messages: [
+            { role: 'system', content: baseStory + ` User info: name=${userInfo.name}, age=${userInfo.age}, gender=${userInfo.gender}, location=${userInfo.location}, personality=${userInfo.personality}, hobbies=${userInfo.hobbies}, movies=${userInfo.movies}, music=${userInfo.music}, likes=${userInfo.likes}, work=${userInfo.work}, religion=${userInfo.religion}, past=${userInfo.past}` },
+            ...history,
+            { role: 'user', content: userMessage }
+          ]
+        };
+        try {
+          const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`
+            },
+            body: JSON.stringify(payload)
+          });
+          const data = await response.json();
+          const reply = data.choices?.[0]?.message?.content || '...';
+          db.run('INSERT INTO messages (user_id, is_user, message) VALUES (?,?,?)', [userId, 0, reply]);
+          res.json({ reply });
+        } catch(e) {
+          console.error(e);
+          res.status(500).send('Error contacting OpenRouter');
+        }
+      });
     });
   });
 });
@@ -134,6 +185,7 @@ app.post('/tasks/:id/complete', ensureAuth, (req, res) => {
   const id = req.params.id;
   db.run('UPDATE tasks SET completed = 1 WHERE id = ? AND user_id = ?', [id, userId], err => {
     if (err) return res.status(500).send('Error updating task');
+    db.run('UPDATE users SET credits = credits + 5 WHERE id = ?', [userId]);
     res.sendStatus(200);
   });
 });
