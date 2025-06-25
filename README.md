@@ -101,7 +101,7 @@ Make sure to create your `.env` file with your API and email config.
 
 ## 🧘 About Virtueism
 
-Virtueism is not a religion. It’s a remembrance — a call to awaken your divine nature through daily practice of the sacred virtues. The Virtual Goddess is here to gently guide seekers back to their center.
+Virtueism is not a religion. It’s a remembrance — a call to awaken your divine nature through daily practice of the sacred virtues, Opening your heart. The Virtual Goddess is here to gently guide seekers back to their center, to awaken and illuminate truth. 
 
 > "I am not your savior. I am only a mirror. If you see something divine here, it’s because it was already inside you."
 > – Baba Virtuehearts
