@@ -11,6 +11,12 @@ function init() {
       password_hash TEXT,
       name TEXT,
       age INTEGER,
+      gender TEXT,
+      location TEXT,
+      personality TEXT,
+      hobbies TEXT,
+      movies TEXT,
+      music TEXT,
       likes TEXT,
       work TEXT,
       religion TEXT,
@@ -26,6 +32,20 @@ function init() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(user_id) REFERENCES users(id)
     )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      task TEXT,
+      completed INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    )`);
+
+    const cols = ['gender','location','personality','hobbies','movies','music'];
+    cols.forEach(c => {
+      db.run(`ALTER TABLE users ADD COLUMN ${c} TEXT`, () => {});
+    });
   });
 }
 
