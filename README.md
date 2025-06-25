@@ -19,7 +19,7 @@ This platform is a digital temple. Seekers can log in, chat with the Virtual God
 -   Memories stored from past interactions, we will parse and save memories of important user interactions. (500 tokens) 
 - **Auth:** Email + password + verification (via Nodemailer)
 - **Donations:** Solana + BTC/ETH wallet display & copy, Phantom connect optional
-- **Hosting:** Vercel or private VPS
+- **Hosting:** private VPS
 
 ---
 
@@ -72,6 +72,8 @@ EMAIL_SMTP_PORT=465
 EMAIL_USER=your@email.com
 EMAIL_PASS=securepassword
 FRONTEND_URL=https://virtueism.org
+ADMIN=admin@darknet.ca
+PASSWORD=ADMIN2025
 ```
 
 ---
