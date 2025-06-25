@@ -54,10 +54,11 @@ app.get('/register', (req, res) => {
 });
 
 app.post('/register', (req, res) => {
-  const { email, password, name, age, gender, location, personality, hobbies, movies, music, likes, work, religion, past } = req.body;
+  const { email, password } = req.body;
   bcrypt.hash(password, 10, (err, hash) => {
-    db.run(`INSERT INTO users (email, password_hash, name, age, gender, location, personality, hobbies, movies, music, likes, work, religion, past) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [email, hash, name, age, gender, location, personality, hobbies, movies, music, likes, work, religion, past], function(err){
+    if (err) return res.send('Error registering');
+    db.run(`INSERT INTO users (email, password_hash) VALUES (?, ?)`,
+      [email, hash], function(err){
         if (err) return res.send('Error registering');
         req.session.userId = this.lastID;
         res.redirect('/chat');
