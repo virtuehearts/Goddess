@@ -57,10 +57,21 @@ This platform is a digital temple. Seekers can log in, chat with the Virtual God
 | id             | INTEGER   | Primary key         |
 | email          | TEXT      | Unique              |
 | password_hash  | TEXT      | Securely hashed     |
-| verified       | BOOLEAN   | Email confirmed     |
+| name           | TEXT      | User's name         |
+| age            | INTEGER   | Age                 |
+| gender         | TEXT      |                     |
+| location       | TEXT      |                     |
+| personality    | TEXT      |                     |
+| hobbies        | TEXT      |                     |
+| movies         | TEXT      |                     |
+| music          | TEXT      |                     |
+| likes          | TEXT      |                     |
+| work           | TEXT      |                     |
+| religion       | TEXT      |                     |
+| past           | TEXT      |                     |
 | created_at     | DATETIME  | Timestamp           |
 
-### `virtue_logs`, `messages`, `donations` schemas follow as per Tech Overview
+### `tasks`, `messages`, `donations` schemas follow as per Tech Overview
 
 ---
 

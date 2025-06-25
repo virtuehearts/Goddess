@@ -54,10 +54,10 @@ app.get('/register', (req, res) => {
 });
 
 app.post('/register', (req, res) => {
-  const { email, password, name, age, likes, work, religion, past } = req.body;
+  const { email, password, name, age, gender, location, personality, hobbies, movies, music, likes, work, religion, past } = req.body;
   bcrypt.hash(password, 10, (err, hash) => {
-    db.run('INSERT INTO users (email, password_hash, name, age, likes, work, religion, past) VALUES (?,?,?,?,?,?,?,?)',
-      [email, hash, name, age, likes, work, religion, past], function(err){
+    db.run(`INSERT INTO users (email, password_hash, name, age, gender, location, personality, hobbies, movies, music, likes, work, religion, past) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [email, hash, name, age, gender, location, personality, hobbies, movies, music, likes, work, religion, past], function(err){
         if (err) return res.send('Error registering');
         req.session.userId = this.lastID;
         res.redirect('/chat');
@@ -81,7 +81,7 @@ app.post('/chat', ensureAuth, async (req, res) => {
       const payload = {
         model: 'openrouter/cinematika',
         messages: [
-          { role: 'system', content: baseStory + ` User info: name=${user.name}, age=${user.age}, likes=${user.likes}, work=${user.work}, religion=${user.religion}, past=${user.past}` },
+          { role: 'system', content: baseStory + ` User info: name=${user.name}, age=${user.age}, gender=${user.gender}, location=${user.location}, personality=${user.personality}, hobbies=${user.hobbies}, movies=${user.movies}, music=${user.music}, likes=${user.likes}, work=${user.work}, religion=${user.religion}, past=${user.past}` },
           ...history,
           { role: 'user', content: userMessage }
         ]
@@ -104,6 +104,32 @@ app.post('/chat', ensureAuth, async (req, res) => {
         res.status(500).send('Error contacting OpenRouter');
       }
     });
+  });
+});
+
+app.post('/tasks', ensureAuth, (req, res) => {
+  const { task } = req.body;
+  const userId = req.session.userId;
+  db.run('INSERT INTO tasks (user_id, task) VALUES (?,?)', [userId, task], err => {
+    if (err) return res.status(500).send('Error adding task');
+    res.sendStatus(200);
+  });
+});
+
+app.get('/tasks', ensureAuth, (req, res) => {
+  const userId = req.session.userId;
+  db.all('SELECT id, task, completed FROM tasks WHERE user_id = ?', [userId], (err, rows) => {
+    if (err) return res.status(500).send('Error fetching tasks');
+    res.json(rows);
+  });
+});
+
+app.post('/tasks/:id/complete', ensureAuth, (req, res) => {
+  const userId = req.session.userId;
+  const id = req.params.id;
+  db.run('UPDATE tasks SET completed = 1 WHERE id = ? AND user_id = ?', [id, userId], err => {
+    if (err) return res.status(500).send('Error updating task');
+    res.sendStatus(200);
   });
 });
 
