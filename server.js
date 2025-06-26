@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const dotenv = require('dotenv');
 const bcrypt = require('bcrypt');
-const fetch = require('node-fetch');
+// Use Node 20's built-in fetch which supports streaming
 const session = require('express-session');
 
 const { db, init, seedAdmin } = require('./database');
