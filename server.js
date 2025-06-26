@@ -12,6 +12,7 @@ const fetch =
 
 const { db, init, seedAdmin } = require('./database');
 const { baseStory } = require('./story');
+const { lore } = require('./lore');
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -218,7 +219,7 @@ app.post('/chat', ensureAuth, async (req, res) => {
           model: 'shisa-ai/shisa-v2-llama3.3-70b:free',
           stream: true,
           messages: [
-            { role: 'system', content: baseStory + ` User info: name=${userInfo.name || ''}, age=${userInfo.age || ''}, gender=${userInfo.gender || ''}, location=${userInfo.location || ''}, personality=${userInfo.personality || ''}, hobbies=${userInfo.hobbies || ''}, movies=${userInfo.movies || ''}, music=${userInfo.music || ''}, likes=${userInfo.likes || ''}, work=${userInfo.work || ''}, religion=${userInfo.religion || ''}, past=${userInfo.past || ''}` },
+            { role: 'system', content: `${baseStory}\n${lore}\nUser info: name=${userInfo.name || ''}, age=${userInfo.age || ''}, gender=${userInfo.gender || ''}, location=${userInfo.location || ''}, personality=${userInfo.personality || ''}, hobbies=${userInfo.hobbies || ''}, movies=${userInfo.movies || ''}, music=${userInfo.music || ''}, likes=${userInfo.likes || ''}, work=${userInfo.work || ''}, religion=${userInfo.religion || ''}, past=${userInfo.past || ''}` },
             ...history,
             { role: 'user', content: userMessage }
           ]

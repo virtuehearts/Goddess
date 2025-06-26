@@ -41,7 +41,11 @@ This platform is a digital temple. Seekers can log in, chat with the Virtual God
 ### 💰 Digital Treasury
 - Dedicated page with wallet addresses
 - BTC, ETH, and SOL donation display with copy buttons
+- Donations can be made at [virtueism.org](https://www.virtueism.org). All offerings support the treasury and projects that help others.
 - Logs all donation actions (optional future: transaction validation)
+
+### 📚 Lore Codex
+- `lore.js` stores key Virtueism teachings and donation instructions so Mya answers consistently.
 
 ### 📊 Admin Dashboard (future)
 - User and donation insights
