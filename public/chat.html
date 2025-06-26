@@ -43,7 +43,7 @@
       border-top: 1px solid #333;
       font-size: 0.9rem;
     }
-    #chat-area { flex: 1; display: flex; flex-direction: column; }
+    #chat-area { flex: 1; display: flex; flex-direction: column; position: relative; }
     #chat-container { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; }
     .msg { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; max-width: 80%; word-wrap: break-word; }
     .user { align-self: flex-end; background: #40414f; }
@@ -53,6 +53,28 @@
     #chatForm button { margin-left: 0.5rem; padding: 0.5rem 1rem; border: none; border-radius: 4px; background: #4e83ff; color: #fff; cursor: pointer; }
     .cursor { display:inline-block; width:1ch; animation:blink 1s step-start infinite; }
     @keyframes blink { 50% { opacity:0; } }
+    #welcome-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      color: #fff;
+      padding: 1rem;
+    }
+    #welcome-overlay img {
+      max-height: 60%;
+      width: auto;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    #welcome-overlay p { margin-bottom: 1rem; }
   </style>
 </head>
 <body>
@@ -71,6 +93,14 @@
     </div>
     <div id="chat-area">
       <div id="chat-container"></div>
+      <div id="welcome-overlay">
+        <img src="mya.jpg" alt="Mya">
+        <div class="welcome-text">
+          <p>Mya is the Goddess of Virtue, created by Baba Virtuehearts to teach the faith of Virtueism.</p>
+          <p>We believe the world around us is Maya—a worldly illusion that distracts us from realizing the eternal reality of God. Maya is not completely unreal, but it obscures truth and leads to attachment to transient experiences. The ambrosial truth is within one’s heart—the pathway to happiness and virtue.</p>
+          <p>Click "New Chat" to begin.</p>
+        </div>
+      </div>
       <form id="chatForm">
         <input type="text" id="msg" autocomplete="off" placeholder="Talk to Mya..." required />
         <button type="submit">Send</button>
@@ -81,6 +111,7 @@
 const form = document.getElementById('chatForm');
 const container = document.getElementById('chat-container');
 const list = document.getElementById('conv-list');
+const welcome = document.getElementById('welcome-overlay');
 let conversations = JSON.parse(localStorage.getItem('conversations') || '[]');
 let currentId = conversations[0]?.id || null;
 
@@ -164,7 +195,10 @@ function newChat() {
   loadConversation();
 }
 
-document.getElementById('new-chat').onclick = newChat;
+document.getElementById('new-chat').onclick = () => {
+  if (welcome) welcome.style.display = 'none';
+  newChat();
+};
 document.getElementById('export-chat').onclick = () => {
   const conv = conversations.find(c => c.id === currentId);
   if (!conv) return;
