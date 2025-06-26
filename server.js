@@ -49,6 +49,17 @@ function updateMemories(userId, text) {
   });
 }
 
+// Extract internal notes like *(note)* from LLM output
+function parseThoughts(text) {
+  const thoughts = [];
+  const clean = text.replace(/\*\([^)]*\)\*/g, (m) => {
+    const inner = m.slice(1, -1).trim();
+    if (inner) thoughts.push(inner.replace(/^\(|\)$/g, ''));
+    return '';
+  }).replace(/\s{2,}/g, ' ').trim();
+  return { clean, thoughts };
+}
+
 dotenv.config();
 
 const app = express();
@@ -234,8 +245,12 @@ app.post('/chat', ensureAuth, async (req, res) => {
 
           if (!reply) reply = '...';
           reply = reply.replace(/—/g, '-');
-          db.run('INSERT INTO messages (user_id, conversation_id, is_user, message) VALUES (?,?,?,?)', [userId, conversationId, 0, reply]);
-          res.json({ reply });
+          const { clean, thoughts } = parseThoughts(reply);
+          thoughts.forEach(t => {
+            db.run('INSERT INTO thoughts (user_id, conversation_id, thought) VALUES (?,?,?)', [userId, conversationId, t]);
+          });
+          db.run('INSERT INTO messages (user_id, conversation_id, is_user, message) VALUES (?,?,?,?)', [userId, conversationId, 0, clean]);
+          res.json({ reply: clean });
         } catch(e) {
           console.error(e);
           res.status(500).send('Error contacting OpenRouter');
