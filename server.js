@@ -27,6 +27,28 @@ function refreshCredits(userId, cb) {
   });
 }
 
+// Simple memory parser to store user-provided information
+function updateMemories(userId, text) {
+  const patterns = [
+    { regex: /my name is ([a-zA-Z ]+)/i, field: 'name' },
+    { regex: /i am ([a-zA-Z ]+) years old/i, field: 'age' },
+    { regex: /i live in ([a-zA-Z ,]+)/i, field: 'location' },
+    { regex: /i am from ([a-zA-Z ,]+)/i, field: 'location' },
+    { regex: /my hobbies? (?:are|include) ([a-zA-Z ,]+)/i, field: 'hobbies' },
+    { regex: /i like ([a-zA-Z ,]+)/i, field: 'likes' },
+    { regex: /my favorite movies? (?:are|is) ([a-zA-Z ,]+)/i, field: 'movies' },
+    { regex: /my favorite music (?:is|are) ([a-zA-Z ,]+)/i, field: 'music' }
+  ];
+
+  patterns.forEach(p => {
+    const m = text.match(p.regex);
+    if (m && m[1]) {
+      const value = m[1].trim();
+      db.run(`UPDATE users SET ${p.field} = ? WHERE id = ?`, [value, userId]);
+    }
+  });
+}
+
 dotenv.config();
 
 const app = express();
@@ -129,6 +151,7 @@ app.post('/donated', ensureAuth, (req, res) => {
 app.post('/chat', ensureAuth, async (req, res) => {
   const userId = req.session.userId;
   const userMessage = req.body.message;
+  updateMemories(userId, userMessage);
   refreshCredits(userId, (err, user) => {
     if (err) return res.status(500).send('Error');
     if (!user.unlimited_credits && user.credits <= 0) {
@@ -148,7 +171,7 @@ app.post('/chat', ensureAuth, async (req, res) => {
           model: 'shisa-ai/shisa-v2-llama3.3-70b:free',
           stream: true,
           messages: [
-            { role: 'system', content: baseStory + ` User info: name=${userInfo.name}, age=${userInfo.age}, gender=${userInfo.gender}, location=${userInfo.location}, personality=${userInfo.personality}, hobbies=${userInfo.hobbies}, movies=${userInfo.movies}, music=${userInfo.music}, likes=${userInfo.likes}, work=${userInfo.work}, religion=${userInfo.religion}, past=${userInfo.past}` },
+            { role: 'system', content: baseStory + ` User info: name=${userInfo.name || ''}, age=${userInfo.age || ''}, gender=${userInfo.gender || ''}, location=${userInfo.location || ''}, personality=${userInfo.personality || ''}, hobbies=${userInfo.hobbies || ''}, movies=${userInfo.movies || ''}, music=${userInfo.music || ''}, likes=${userInfo.likes || ''}, work=${userInfo.work || ''}, religion=${userInfo.religion || ''}, past=${userInfo.past || ''}` },
             ...history,
             { role: 'user', content: userMessage }
           ]
@@ -183,6 +206,7 @@ app.post('/chat', ensureAuth, async (req, res) => {
           }
 
           if (!reply) reply = '...';
+          reply = reply.replace(/—/g, '-');
           db.run('INSERT INTO messages (user_id, is_user, message) VALUES (?,?,?)', [userId, 0, reply]);
           res.json({ reply });
         } catch(e) {
