@@ -144,7 +144,8 @@ app.post('/chat', ensureAuth, async (req, res) => {
       db.all('SELECT is_user, message FROM messages WHERE user_id = ? ORDER BY id ASC LIMIT 20', [userId], async (err3, rows) => {
         rows.forEach(r => history.push({ role: r.is_user ? 'user' : 'assistant', content: r.message }));
         const payload = {
-          model: 'mistralai/Mixtral-8x7B-Instruct-v0.1',
+          // Use the Shisa v2 Llama3.3 model for improved roleplay capabilities
+          model: 'shisa-ai/shisa-v2-llama3.3-70b:free',
           stream: true,
           messages: [
             { role: 'system', content: baseStory + ` User info: name=${userInfo.name}, age=${userInfo.age}, gender=${userInfo.gender}, location=${userInfo.location}, personality=${userInfo.personality}, hobbies=${userInfo.hobbies}, movies=${userInfo.movies}, music=${userInfo.music}, likes=${userInfo.likes}, work=${userInfo.work}, religion=${userInfo.religion}, past=${userInfo.past}` },
