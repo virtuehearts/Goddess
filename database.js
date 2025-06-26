@@ -27,13 +27,23 @@ function init() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    db.run(`CREATE TABLE IF NOT EXISTS conversations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      name TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER,
+      conversation_id INTEGER,
       is_user INTEGER,
       message TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY(user_id) REFERENCES users(id)
+      FOREIGN KEY(user_id) REFERENCES users(id),
+      FOREIGN KEY(conversation_id) REFERENCES conversations(id)
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS tasks (
@@ -44,6 +54,8 @@ function init() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(user_id) REFERENCES users(id)
     )`);
+
+    db.run('ALTER TABLE messages ADD COLUMN conversation_id INTEGER', () => {});
 
     const colDefs = {
       gender: 'TEXT',
@@ -69,7 +81,7 @@ function seedAdmin(email, password) {
     if (!row) {
       bcrypt.hash(password, 10, (err, hash) => {
         if (err) return console.error(err);
-        db.run('INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)', [email, hash, 'Admin']);
+        db.run('INSERT INTO users (email, password_hash) VALUES (?, ?)', [email, hash]);
       });
     }
   });

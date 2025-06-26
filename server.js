@@ -139,6 +139,32 @@ app.get('/credits', ensureAuth, (req, res) => {
   });
 });
 
+app.get('/conversations', ensureAuth, (req, res) => {
+  const userId = req.session.userId;
+  db.all('SELECT id, name FROM conversations WHERE user_id = ? ORDER BY id DESC', [userId], (err, rows) => {
+    if (err) return res.status(500).send('Error');
+    res.json(rows);
+  });
+});
+
+app.post('/conversations', ensureAuth, (req, res) => {
+  const userId = req.session.userId;
+  const name = req.body.name || 'New Chat';
+  db.run('INSERT INTO conversations (user_id, name) VALUES (?,?)', [userId, name], function(err){
+    if (err) return res.status(500).send('Error');
+    res.json({ id: this.lastID });
+  });
+});
+
+app.get('/conversations/:id/messages', ensureAuth, (req, res) => {
+  const userId = req.session.userId;
+  const convId = req.params.id;
+  db.all('SELECT is_user, message FROM messages WHERE user_id=? AND conversation_id=? ORDER BY id ASC', [userId, convId], (err, rows) => {
+    if (err) return res.status(500).send('Error');
+    res.json(rows);
+  });
+});
+
 // simple endpoint to mark a user as donated
 app.post('/donated', ensureAuth, (req, res) => {
   const userId = req.session.userId;
@@ -150,6 +176,7 @@ app.post('/donated', ensureAuth, (req, res) => {
 
 app.post('/chat', ensureAuth, async (req, res) => {
   const userId = req.session.userId;
+  const conversationId = req.body.conversationId;
   const userMessage = req.body.message;
   updateMemories(userId, userMessage);
   refreshCredits(userId, (err, user) => {
@@ -160,11 +187,11 @@ app.post('/chat', ensureAuth, async (req, res) => {
     if (!user.unlimited_credits) {
       db.run('UPDATE users SET credits = credits - 1 WHERE id = ?', [userId]);
     }
-    db.run('INSERT INTO messages (user_id, is_user, message) VALUES (?,?,?)', [userId, 1, userMessage]);
+    db.run('INSERT INTO messages (user_id, conversation_id, is_user, message) VALUES (?,?,?,?)', [userId, conversationId, 1, userMessage]);
 
     db.get('SELECT * FROM users WHERE id = ?', [userId], async (err2, userInfo) => {
       const history = [];
-      db.all('SELECT is_user, message FROM messages WHERE user_id = ? ORDER BY id ASC LIMIT 20', [userId], async (err3, rows) => {
+      db.all('SELECT is_user, message FROM messages WHERE user_id = ? AND conversation_id = ? ORDER BY id ASC LIMIT 20', [userId, conversationId], async (err3, rows) => {
         rows.forEach(r => history.push({ role: r.is_user ? 'user' : 'assistant', content: r.message }));
         const payload = {
           // Use the Shisa v2 Llama3.3 model for improved roleplay capabilities
@@ -207,7 +234,7 @@ app.post('/chat', ensureAuth, async (req, res) => {
 
           if (!reply) reply = '...';
           reply = reply.replace(/—/g, '-');
-          db.run('INSERT INTO messages (user_id, is_user, message) VALUES (?,?,?)', [userId, 0, reply]);
+          db.run('INSERT INTO messages (user_id, conversation_id, is_user, message) VALUES (?,?,?,?)', [userId, conversationId, 0, reply]);
           res.json({ reply });
         } catch(e) {
           console.error(e);
