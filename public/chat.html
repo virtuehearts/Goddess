@@ -170,9 +170,18 @@ document.body.addEventListener('click', () => {
   ctxMenu.style.display = 'none';
 });
 
+async function fetchJSON(url, opts) {
+  const res = await fetch(url, opts);
+  const type = res.headers.get('content-type') || '';
+  if (!res.ok || !type.includes('application/json')) {
+    window.location = '/login';
+    throw new Error('Login required');
+  }
+  return res.json();
+}
+
 async function fetchConversations() {
-  const res = await fetch('/conversations');
-  const data = await res.json();
+  const data = await fetchJSON('/conversations');
   conversations = data.map(c => ({ id: c.id, name: c.name, messages: [] }));
   currentId = conversations[0]?.id || null;
   renderConversations();
@@ -245,19 +254,22 @@ function loadConversation() {
   container.innerHTML = '';
   const conv = conversations.find(c => c.id === currentId);
   if (!conv) return;
-    if (!conv.messages.length) {
-      fetch(`/conversations/${currentId}/messages`).then(r => r.json()).then(rows => {
-        conv.messages = rows.map(m => ({ role: m.is_user ? 'user' : 'assistant', text: m.message }));
-        conv.messages.forEach(m => append(m.role, m.text, false));
-      });
-    } else {
+  if (!conv.messages.length) {
+    fetchJSON(`/conversations/${currentId}/messages`).then(rows => {
+      conv.messages = rows.map(m => ({ role: m.is_user ? 'user' : 'assistant', text: m.message }));
       conv.messages.forEach(m => append(m.role, m.text, false));
-    }
+    });
+  } else {
+    conv.messages.forEach(m => append(m.role, m.text, false));
   }
+}
 
 async function newChat() {
-  const res = await fetch('/conversations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'New Chat' }) });
-  const data = await res.json();
+  const data = await fetchJSON('/conversations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'New Chat' })
+  });
   conversations.unshift({ id: data.id, name: 'New Chat', messages: [] });
   currentId = data.id;
   renderConversations();
@@ -270,7 +282,7 @@ ctxRename.onclick = () => {
   const n = prompt('Rename chat', conv.name);
   if (n) {
     conv.name = n;
-    fetch(`/conversations/${ctxTarget}/rename`, {
+    fetchJSON(`/conversations/${ctxTarget}/rename`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: n })
@@ -332,12 +344,11 @@ form.addEventListener('submit', async (e) => {
     thinkDiv.textContent = 'Mya is thinking' + '.'.repeat(dots);
   }, 500);
 
-  const res = await fetch('/chat', {
+  const data = await fetchJSON('/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message: text, conversationId: currentId })
   });
-  const data = await res.json();
   clearInterval(dotInterval);
   thinkDiv.remove();
   appendTyped('assistant', data.reply);
@@ -355,8 +366,7 @@ musicToggle.onclick = () => {
 };
 
 async function loadCredits() {
-  const res = await fetch('/credits');
-  const data = await res.json();
+  const data = await fetchJSON('/credits');
   document.getElementById('credits').textContent = 'Credits: ' + data.credits;
 }
 loadCredits();

@@ -18,7 +18,17 @@
   <button id="donate">Donate</button>
   <div style="margin-top:1rem"><a href="/chat">Back to Chat</a></div>
   <script>
-    fetch('/me').then(r => r.json()).then(u => {
+    async function fetchJSON(url, opts) {
+      const res = await fetch(url, opts);
+      const type = res.headers.get('content-type') || '';
+      if (!res.ok || !type.includes('application/json')) {
+        window.location = '/login';
+        throw new Error('Login required');
+      }
+      return res.json();
+    }
+
+    fetchJSON('/me').then(u => {
       if(!u) return;
       document.getElementById('email').textContent = u.email;
       document.getElementById('join').textContent = u.created_at?.slice(0,10) || '';
