@@ -144,7 +144,8 @@ app.post('/chat', ensureAuth, async (req, res) => {
       db.all('SELECT is_user, message FROM messages WHERE user_id = ? ORDER BY id ASC LIMIT 20', [userId], async (err3, rows) => {
         rows.forEach(r => history.push({ role: r.is_user ? 'user' : 'assistant', content: r.message }));
         const payload = {
-          model: 'openrouter/cinematika',
+          model: 'mistralai/Mixtral-8x7B-Instruct-v0.1',
+          stream: true,
           messages: [
             { role: 'system', content: baseStory + ` User info: name=${userInfo.name}, age=${userInfo.age}, gender=${userInfo.gender}, location=${userInfo.location}, personality=${userInfo.personality}, hobbies=${userInfo.hobbies}, movies=${userInfo.movies}, music=${userInfo.music}, likes=${userInfo.likes}, work=${userInfo.work}, religion=${userInfo.religion}, past=${userInfo.past}` },
             ...history,
@@ -160,8 +161,27 @@ app.post('/chat', ensureAuth, async (req, res) => {
             },
             body: JSON.stringify(payload)
           });
-          const data = await response.json();
-          const reply = data.choices?.[0]?.message?.content || '...';
+
+          let reply = '';
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n').filter(l => l.trim().startsWith('data: '));
+            for (const line of lines) {
+              const dataStr = line.replace(/^data:\s*/, '').trim();
+              if (dataStr === '[DONE]') continue;
+              try {
+                const parsed = JSON.parse(dataStr);
+                const delta = parsed.choices?.[0]?.delta?.content;
+                if (delta) reply += delta;
+              } catch (_) {}
+            }
+          }
+
+          if (!reply) reply = '...';
           db.run('INSERT INTO messages (user_id, is_user, message) VALUES (?,?,?)', [userId, 0, reply]);
           res.json({ reply });
         } catch(e) {
