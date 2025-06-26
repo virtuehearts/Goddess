@@ -112,10 +112,17 @@ const form = document.getElementById('chatForm');
 const container = document.getElementById('chat-container');
 const list = document.getElementById('conv-list');
 const welcome = document.getElementById('welcome-overlay');
-let conversations = JSON.parse(localStorage.getItem('conversations') || '[]');
-let currentId = conversations[0]?.id || null;
+let conversations = [];
+let currentId = null;
 
-function save() { localStorage.setItem('conversations', JSON.stringify(conversations)); }
+async function fetchConversations() {
+  const res = await fetch('/conversations');
+  const data = await res.json();
+  conversations = data.map(c => ({ id: c.id, name: c.name, messages: [] }));
+  currentId = conversations[0]?.id || null;
+  renderConversations();
+  loadConversation();
+}
 
 function append(role, text) {
   const div = document.createElement('div');
@@ -124,7 +131,7 @@ function append(role, text) {
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
   const conv = conversations.find(c => c.id === currentId);
-  if (conv) { conv.messages.push({role, text}); save(); }
+  if (conv) { conv.messages.push({role, text}); }
 }
 
 function appendTyped(role, text) {
@@ -137,18 +144,22 @@ function appendTyped(role, text) {
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
   const conv = conversations.find(c => c.id === currentId);
-  if (conv) { conv.messages.push({role, text}); save(); }
+  if (conv) { conv.messages.push({role, text}); }
   let i = 0;
-  const interval = setInterval(() => {
+  function typeNext() {
     if (i < text.length) {
-      cursor.before(text[i]);
+      const ch = text[i];
+      cursor.before(ch);
       i++;
       container.scrollTop = container.scrollHeight;
+      let delay = 30 + Math.random() * 70;
+      if (ch === ' ') delay += 100 + Math.random() * 150;
+      setTimeout(typeNext, delay);
     } else {
-      clearInterval(interval);
       cursor.remove();
     }
-  }, 60000 / (30 * 5));
+  }
+  typeNext();
 }
 
 function renderConversations() {
@@ -161,7 +172,7 @@ function renderConversations() {
     span.oncontextmenu = (e) => {
       e.preventDefault();
       const n = prompt('Rename chat', c.name);
-      if (n) { c.name = n; save(); renderConversations(); }
+      if (n) { c.name = n; renderConversations(); }
     };
     li.appendChild(span);
     const del = document.createElement('button');
@@ -170,7 +181,6 @@ function renderConversations() {
       e.stopPropagation();
       conversations = conversations.filter(x => x.id !== c.id);
       if (currentId === c.id) { currentId = conversations[0]?.id || null; }
-      save();
       renderConversations();
       loadConversation();
     };
@@ -183,14 +193,22 @@ function renderConversations() {
 function loadConversation() {
   container.innerHTML = '';
   const conv = conversations.find(c => c.id === currentId);
-  if (conv) conv.messages.forEach(m => append(m.role, m.text));
+  if (!conv) return;
+  if (!conv.messages.length) {
+    fetch(`/conversations/${currentId}/messages`).then(r => r.json()).then(rows => {
+      conv.messages = rows.map(m => ({ role: m.is_user ? 'user' : 'assistant', text: m.message }));
+      conv.messages.forEach(m => append(m.role, m.text));
+    });
+  } else {
+    conv.messages.forEach(m => append(m.role, m.text));
+  }
 }
 
-function newChat() {
-  const id = Date.now().toString();
-  conversations.unshift({ id, name: 'New Chat', messages: [] });
-  currentId = id;
-  save();
+async function newChat() {
+  const res = await fetch('/conversations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'New Chat' }) });
+  const data = await res.json();
+  conversations.unshift({ id: data.id, name: 'New Chat', messages: [] });
+  currentId = data.id;
   renderConversations();
   loadConversation();
 }
@@ -234,7 +252,7 @@ form.addEventListener('submit', async (e) => {
   const res = await fetch('/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: text })
+    body: JSON.stringify({ message: text, conversationId: currentId })
   });
   const data = await res.json();
   clearInterval(dotInterval);
@@ -248,8 +266,7 @@ async function loadCredits() {
   document.getElementById('credits').textContent = 'Credits: ' + data.credits;
 }
 loadCredits();
-renderConversations();
-loadConversation();
+fetchConversations();
 </script>
 </body>
 </html>
