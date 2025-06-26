@@ -154,6 +154,25 @@ const ctxRename = document.getElementById('ctx-rename');
 const ctxExport = document.getElementById('ctx-export');
 const ctxDelete = document.getElementById('ctx-delete');
 musicToggle.textContent = '🔇';
+// available background tracks that can be triggered by the LLM
+const tracks = {
+  mantra: 'mantra.mp3',
+  meditation: 'meditation.mp3',
+  sad: 'sad.mp3',
+  focus: 'focus.mp3',
+  happy: 'happy.mp3',
+  tranquil: 'tranquil.mp3',
+  upbeat: 'upbeat.mp3'
+};
+function playTrack(key) {
+  const src = tracks[key];
+  if (!src) return;
+  music.src = src;
+  if (music.paused) {
+    music.play();
+    musicToggle.textContent = '🔊';
+  }
+}
 let conversations = [];
 let currentId = null;
 let ctxTarget = null;
@@ -352,6 +371,7 @@ form.addEventListener('submit', async (e) => {
   clearInterval(dotInterval);
   thinkDiv.remove();
   appendTyped('assistant', data.reply);
+  if (data.track) playTrack(data.track);
   loadCredits();
 });
 
