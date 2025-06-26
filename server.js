@@ -256,21 +256,37 @@ app.post('/chat', ensureAuth, async (req, res) => {
           });
 
           let reply = '';
-          const reader = response.body.getReader();
           const decoder = new TextDecoder();
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n').filter(l => l.trim().startsWith('data: '));
-            for (const line of lines) {
-              const dataStr = line.replace(/^data:\s*/, '').trim();
-              if (dataStr === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(dataStr);
-                const delta = parsed.choices?.[0]?.delta?.content;
-                if (delta) reply += delta;
-              } catch (_) {}
+          if (response.body.getReader) {
+            const reader = response.body.getReader();
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              const chunk = decoder.decode(value);
+              const lines = chunk.split('\n').filter(l => l.trim().startsWith('data: '));
+              for (const line of lines) {
+                const dataStr = line.replace(/^data:\s*/, '').trim();
+                if (dataStr === '[DONE]') continue;
+                try {
+                  const parsed = JSON.parse(dataStr);
+                  const delta = parsed.choices?.[0]?.delta?.content;
+                  if (delta) reply += delta;
+                } catch (_) {}
+              }
+            }
+          } else {
+            for await (const chunk of response.body) {
+              const chunkStr = decoder.decode(chunk);
+              const lines = chunkStr.split('\n').filter(l => l.trim().startsWith('data: '));
+              for (const line of lines) {
+                const dataStr = line.replace(/^data:\s*/, '').trim();
+                if (dataStr === '[DONE]') continue;
+                try {
+                  const parsed = JSON.parse(dataStr);
+                  const delta = parsed.choices?.[0]?.delta?.content;
+                  if (delta) reply += delta;
+                } catch (_) {}
+              }
             }
           }
 

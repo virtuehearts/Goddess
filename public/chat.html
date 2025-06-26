@@ -179,17 +179,19 @@ async function fetchConversations() {
   loadConversation();
 }
 
-function append(role, text) {
+function append(role, text, store = true) {
   const div = document.createElement('div');
   div.className = `msg ${role}`;
   div.textContent = text;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
-  const conv = conversations.find(c => c.id === currentId);
-  if (conv) { conv.messages.push({role, text}); }
+  if (store) {
+    const conv = conversations.find(c => c.id === currentId);
+    if (conv) { conv.messages.push({role, text}); }
+  }
 }
 
-function appendTyped(role, text) {
+function appendTyped(role, text, store = true) {
   const div = document.createElement('div');
   div.className = `msg ${role}`;
   const cursor = document.createElement('span');
@@ -198,8 +200,10 @@ function appendTyped(role, text) {
   div.appendChild(cursor);
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
-  const conv = conversations.find(c => c.id === currentId);
-  if (conv) { conv.messages.push({role, text}); }
+  if (store) {
+    const conv = conversations.find(c => c.id === currentId);
+    if (conv) { conv.messages.push({role, text}); }
+  }
   let i = 0;
   const speed = 0.25; // typing delay multiplier for faster output
   function typeNext() {
@@ -241,15 +245,15 @@ function loadConversation() {
   container.innerHTML = '';
   const conv = conversations.find(c => c.id === currentId);
   if (!conv) return;
-  if (!conv.messages.length) {
-    fetch(`/conversations/${currentId}/messages`).then(r => r.json()).then(rows => {
-      conv.messages = rows.map(m => ({ role: m.is_user ? 'user' : 'assistant', text: m.message }));
-      conv.messages.forEach(m => append(m.role, m.text));
-    });
-  } else {
-    conv.messages.forEach(m => append(m.role, m.text));
+    if (!conv.messages.length) {
+      fetch(`/conversations/${currentId}/messages`).then(r => r.json()).then(rows => {
+        conv.messages = rows.map(m => ({ role: m.is_user ? 'user' : 'assistant', text: m.message }));
+        conv.messages.forEach(m => append(m.role, m.text, false));
+      });
+    } else {
+      conv.messages.forEach(m => append(m.role, m.text, false));
+    }
   }
-}
 
 async function newChat() {
   const res = await fetch('/conversations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'New Chat' }) });
