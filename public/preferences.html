@@ -10,7 +10,23 @@
 </head>
 <body>
   <h1>Preferences</h1>
-  <p>Profile settings will be available soon.</p>
-  <a href="/chat">Back to Chat</a>
+  <div id="info">
+    <p>Email: <span id="email"></span></p>
+    <p>Join Date: <span id="join"></span></p>
+    <p>Credits: <span id="credits"></span></p>
+  </div>
+  <button id="donate">Donate</button>
+  <div style="margin-top:1rem"><a href="/chat">Back to Chat</a></div>
+  <script>
+    fetch('/me').then(r => r.json()).then(u => {
+      if(!u) return;
+      document.getElementById('email').textContent = u.email;
+      document.getElementById('join').textContent = u.created_at?.slice(0,10) || '';
+      document.getElementById('credits').textContent = u.credits;
+    });
+    document.getElementById('donate').onclick = () => {
+      window.location = '/treasury';
+    };
+  </script>
 </body>
 </html>
