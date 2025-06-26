@@ -89,6 +89,16 @@ app.post('/register', (req, res) => {
   });
 });
 
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/login');
+  });
+});
+
+app.get('/preferences', ensureAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'preferences.html'));
+});
+
 app.get('/chat', ensureAuth, (req, res) => {
   refreshCredits(req.session.userId, () => {
     res.sendFile(path.join(__dirname, 'public', 'chat.html'));
