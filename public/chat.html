@@ -192,11 +192,21 @@ document.body.addEventListener('click', () => {
 async function fetchJSON(url, opts) {
   const res = await fetch(url, opts);
   const type = res.headers.get('content-type') || '';
-  if (!res.ok || !type.includes('application/json')) {
+  if (
+    res.status === 401 ||
+    res.status === 403 ||
+    (res.redirected && res.url.includes('/login'))
+  ) {
     window.location = '/login';
     throw new Error('Login required');
   }
-  return res.json();
+  if (!res.ok) {
+    throw new Error('Request failed');
+  }
+  if (type.includes('application/json')) {
+    return res.json();
+  }
+  return res.text();
 }
 
 async function fetchConversations() {
