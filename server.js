@@ -2,8 +2,13 @@ const express = require('express');
 const path = require('path');
 const dotenv = require('dotenv');
 const bcrypt = require('bcrypt');
-// Use Node 20's built-in fetch which supports streaming
 const session = require('express-session');
+
+// Support environments where global fetch is not available
+const fetch =
+  typeof global.fetch === 'function'
+    ? global.fetch
+    : (...args) => import('node-fetch').then(({ default: f }) => f(...args));
 
 const { db, init, seedAdmin } = require('./database');
 const { baseStory } = require('./story');
@@ -193,7 +198,7 @@ app.post('/chat', ensureAuth, async (req, res) => {
   refreshCredits(userId, (err, user) => {
     if (err) return res.status(500).send('Error');
     if (!user.unlimited_credits && user.credits <= 0) {
-      return res.json({ reply: 'You have no credits left for today.' });
+      return res.json({ reply: 'You have no credits left for today. Please donate to the treasury or wait until tomorrow for credits to replenish.' });
     }
     if (!user.unlimited_credits) {
       db.run('UPDATE users SET credits = credits - 1 WHERE id = ?', [userId]);
