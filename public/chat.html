@@ -52,6 +52,16 @@
     #msg { flex: 1; padding: 0.5rem; border-radius: 4px; border: none; }
     #chatForm button { margin-left: 0.5rem; padding: 0.5rem 1rem; border: none; border-radius: 4px; background: #4e83ff; color: #fff; cursor: pointer; }
     .cursor { display:inline-block; width:1ch; animation:blink 1s step-start infinite; }
+    #music-toggle {
+      position: absolute;
+      bottom: 5rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
     @keyframes blink { 50% { opacity:0; } }
     #welcome-overlay {
       position: absolute;
@@ -105,6 +115,8 @@
         <input type="text" id="msg" autocomplete="off" placeholder="Talk to Mya..." required />
         <button type="submit">Send</button>
       </form>
+      <button id="music-toggle" title="Mute/Unmute">🔊</button>
+      <audio id="bg-music" src="bg.mp3" loop></audio>
     </div>
   </div>
 <script>
@@ -112,6 +124,9 @@ const form = document.getElementById('chatForm');
 const container = document.getElementById('chat-container');
 const list = document.getElementById('conv-list');
 const welcome = document.getElementById('welcome-overlay');
+const music = document.getElementById('bg-music');
+const musicToggle = document.getElementById('music-toggle');
+musicToggle.textContent = '🔇';
 let conversations = [];
 let currentId = null;
 
@@ -146,14 +161,15 @@ function appendTyped(role, text) {
   const conv = conversations.find(c => c.id === currentId);
   if (conv) { conv.messages.push({role, text}); }
   let i = 0;
+  const speed = 0.5; // typing delay multiplier for faster output
   function typeNext() {
     if (i < text.length) {
       const ch = text[i];
       cursor.before(ch);
       i++;
       container.scrollTop = container.scrollHeight;
-      let delay = 30 + Math.random() * 70;
-      if (ch === ' ') delay += 100 + Math.random() * 150;
+      let delay = (30 + Math.random() * 70) * speed;
+      if (ch === ' ') delay += (100 + Math.random() * 150) * speed;
       setTimeout(typeNext, delay);
     } else {
       cursor.remove();
@@ -216,6 +232,10 @@ async function newChat() {
 document.getElementById('new-chat').onclick = () => {
   if (welcome) welcome.style.display = 'none';
   newChat();
+  if (music.paused) {
+    music.play();
+    musicToggle.textContent = '🔊';
+  }
 };
 document.getElementById('export-chat').onclick = () => {
   const conv = conversations.find(c => c.id === currentId);
@@ -259,6 +279,16 @@ form.addEventListener('submit', async (e) => {
   thinkDiv.remove();
   appendTyped('assistant', data.reply);
 });
+
+musicToggle.onclick = () => {
+  if (music.paused) {
+    music.play();
+    musicToggle.textContent = '🔊';
+  } else {
+    music.pause();
+    musicToggle.textContent = '🔇';
+  }
+};
 
 async function loadCredits() {
   const res = await fetch('/credits');
