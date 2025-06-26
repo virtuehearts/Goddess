@@ -227,7 +227,12 @@ function renderConversations() {
     span.textContent = c.name;
     li.appendChild(span);
     li.oncontextmenu = (e) => showContext(e, c.id);
-    li.onclick = () => { currentId = c.id; renderConversations(); loadConversation(); };
+    li.onclick = () => {
+      currentId = c.id;
+      if (welcome) welcome.style.display = 'none';
+      renderConversations();
+      loadConversation();
+    };
     list.appendChild(li);
   });
 }
@@ -259,7 +264,15 @@ ctxRename.onclick = () => {
   const conv = conversations.find(c => c.id === ctxTarget);
   if (!conv) return;
   const n = prompt('Rename chat', conv.name);
-  if (n) { conv.name = n; renderConversations(); }
+  if (n) {
+    conv.name = n;
+    fetch(`/conversations/${ctxTarget}/rename`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: n })
+    });
+    renderConversations();
+  }
   ctxMenu.style.display = 'none';
 };
 

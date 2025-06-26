@@ -160,6 +160,17 @@ app.get('/credits', ensureAuth, (req, res) => {
   });
 });
 
+app.get('/me', ensureAuth, (req, res) => {
+  const userId = req.session.userId;
+  refreshCredits(userId, () => {
+    db.get('SELECT email, created_at, credits, unlimited_credits FROM users WHERE id = ?', [userId], (err, row) => {
+      if (err) return res.status(500).send('Error');
+      if (row) row.credits = row.unlimited_credits ? 'unlimited' : row.credits;
+      res.json(row);
+    });
+  });
+});
+
 app.get('/conversations', ensureAuth, (req, res) => {
   const userId = req.session.userId;
   db.all('SELECT id, name FROM conversations WHERE user_id = ? ORDER BY id DESC', [userId], (err, rows) => {
@@ -174,6 +185,16 @@ app.post('/conversations', ensureAuth, (req, res) => {
   db.run('INSERT INTO conversations (user_id, name) VALUES (?,?)', [userId, name], function(err){
     if (err) return res.status(500).send('Error');
     res.json({ id: this.lastID });
+  });
+});
+
+app.post('/conversations/:id/rename', ensureAuth, (req, res) => {
+  const userId = req.session.userId;
+  const convId = req.params.id;
+  const name = req.body.name || 'New Chat';
+  db.run('UPDATE conversations SET name = ? WHERE id = ? AND user_id = ?', [name, convId, userId], function(err){
+    if (err) return res.status(500).send('Error');
+    res.sendStatus(200);
   });
 });
 
