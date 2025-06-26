@@ -51,6 +51,8 @@
     #chatForm { display: flex; padding: 1rem; background: #202123; }
     #msg { flex: 1; padding: 0.5rem; border-radius: 4px; border: none; }
     #chatForm button { margin-left: 0.5rem; padding: 0.5rem 1rem; border: none; border-radius: 4px; background: #4e83ff; color: #fff; cursor: pointer; }
+    .cursor { display:inline-block; width:1ch; animation:blink 1s step-start infinite; }
+    @keyframes blink { 50% { opacity:0; } }
   </style>
 </head>
 <body>
@@ -92,6 +94,30 @@ function append(role, text) {
   container.scrollTop = container.scrollHeight;
   const conv = conversations.find(c => c.id === currentId);
   if (conv) { conv.messages.push({role, text}); save(); }
+}
+
+function appendTyped(role, text) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  cursor.textContent = '|';
+  div.appendChild(cursor);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  const conv = conversations.find(c => c.id === currentId);
+  if (conv) { conv.messages.push({role, text}); save(); }
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < text.length) {
+      cursor.before(text[i]);
+      i++;
+      container.scrollTop = container.scrollHeight;
+    } else {
+      clearInterval(interval);
+      cursor.remove();
+    }
+  }, 60000 / (30 * 5));
 }
 
 function renderConversations() {
@@ -155,16 +181,31 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = document.getElementById('msg');
   const text = input.value.trim();
-  if(!text) return;
+  if (!text) return;
   append('user', text);
   input.value = '';
+
+  // show thinking indicator
+  const thinkDiv = document.createElement('div');
+  thinkDiv.className = 'msg assistant';
+  thinkDiv.textContent = 'Mya is thinking';
+  container.appendChild(thinkDiv);
+  container.scrollTop = container.scrollHeight;
+  let dots = 0;
+  const dotInterval = setInterval(() => {
+    dots = (dots + 1) % 4;
+    thinkDiv.textContent = 'Mya is thinking' + '.'.repeat(dots);
+  }, 500);
+
   const res = await fetch('/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message: text })
   });
   const data = await res.json();
-  append('assistant', data.reply);
+  clearInterval(dotInterval);
+  thinkDiv.remove();
+  appendTyped('assistant', data.reply);
 });
 
 async function loadCredits() {
