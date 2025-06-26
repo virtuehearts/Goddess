@@ -33,6 +33,25 @@
       border-radius: 4px;
       cursor: pointer;
     }
+    #context-menu {
+      position: absolute;
+      background: #2a2b32;
+      border: 1px solid #555;
+      display: none;
+      flex-direction: column;
+      z-index: 1000;
+    }
+    #context-menu button {
+      background: none;
+      border: none;
+      color: #fff;
+      padding: 0.25rem 0.5rem;
+      text-align: left;
+      cursor: pointer;
+    }
+    #context-menu button:hover {
+      background: #3c3c3c;
+    }
     #conv-list { flex: 1; overflow-y: auto; list-style: none; margin: 0; padding: 0; }
     #conv-list li { padding: 0.5rem 1rem; cursor: pointer; display: flex; align-items: center; }
     #conv-list li.active { background: #2a2b32; }
@@ -92,7 +111,6 @@
     <div id="sidebar">
       <header>
         <button id="new-chat">+ New Chat</button>
-        <button id="export-chat">Export</button>
       </header>
       <ul id="conv-list"></ul>
       <footer>
@@ -119,6 +137,11 @@
       <audio id="bg-music" src="bg.mp3" loop></audio>
     </div>
   </div>
+  <div id="context-menu">
+    <button id="ctx-rename">Rename</button>
+    <button id="ctx-export">Export</button>
+    <button id="ctx-delete">Delete</button>
+  </div>
 <script>
 const form = document.getElementById('chatForm');
 const container = document.getElementById('chat-container');
@@ -126,9 +149,26 @@ const list = document.getElementById('conv-list');
 const welcome = document.getElementById('welcome-overlay');
 const music = document.getElementById('bg-music');
 const musicToggle = document.getElementById('music-toggle');
+const ctxMenu = document.getElementById('context-menu');
+const ctxRename = document.getElementById('ctx-rename');
+const ctxExport = document.getElementById('ctx-export');
+const ctxDelete = document.getElementById('ctx-delete');
 musicToggle.textContent = '🔇';
 let conversations = [];
 let currentId = null;
+let ctxTarget = null;
+
+function showContext(e, id) {
+  e.preventDefault();
+  ctxTarget = id;
+  ctxMenu.style.display = 'flex';
+  ctxMenu.style.left = e.pageX + 'px';
+  ctxMenu.style.top = e.pageY + 'px';
+}
+
+document.body.addEventListener('click', () => {
+  ctxMenu.style.display = 'none';
+});
 
 async function fetchConversations() {
   const res = await fetch('/conversations');
@@ -185,22 +225,8 @@ function renderConversations() {
     li.className = c.id === currentId ? 'active' : '';
     const span = document.createElement('span');
     span.textContent = c.name;
-    span.oncontextmenu = (e) => {
-      e.preventDefault();
-      const n = prompt('Rename chat', c.name);
-      if (n) { c.name = n; renderConversations(); }
-    };
     li.appendChild(span);
-    const del = document.createElement('button');
-    del.textContent = '🗑';
-    del.onclick = (e) => {
-      e.stopPropagation();
-      conversations = conversations.filter(x => x.id !== c.id);
-      if (currentId === c.id) { currentId = conversations[0]?.id || null; }
-      renderConversations();
-      loadConversation();
-    };
-    li.appendChild(del);
+    li.oncontextmenu = (e) => showContext(e, c.id);
     li.onclick = () => { currentId = c.id; renderConversations(); loadConversation(); };
     list.appendChild(li);
   });
@@ -229,6 +255,37 @@ async function newChat() {
   loadConversation();
 }
 
+ctxRename.onclick = () => {
+  const conv = conversations.find(c => c.id === ctxTarget);
+  if (!conv) return;
+  const n = prompt('Rename chat', conv.name);
+  if (n) { conv.name = n; renderConversations(); }
+  ctxMenu.style.display = 'none';
+};
+
+ctxExport.onclick = () => {
+  const conv = conversations.find(c => c.id === ctxTarget);
+  if (!conv) return;
+  const lines = conv.messages.map(m => `${m.role}: ${m.text}`);
+  const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (conv.name || 'chat') + '.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  ctxMenu.style.display = 'none';
+};
+
+ctxDelete.onclick = () => {
+  conversations = conversations.filter(x => x.id !== ctxTarget);
+  if (currentId === ctxTarget) {
+    currentId = conversations[0]?.id || null;
+    loadConversation();
+  }
+  renderConversations();
+  ctxMenu.style.display = 'none';
+};
+
 document.getElementById('new-chat').onclick = () => {
   if (welcome) welcome.style.display = 'none';
   newChat();
@@ -236,17 +293,6 @@ document.getElementById('new-chat').onclick = () => {
     music.play();
     musicToggle.textContent = '🔊';
   }
-};
-document.getElementById('export-chat').onclick = () => {
-  const conv = conversations.find(c => c.id === currentId);
-  if (!conv) return;
-  const lines = conv.messages.map(m => `${m.role}: ${m.text}`);
-  const blob = new Blob([lines.join('\n')], {type: 'text/plain'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = (conv.name || 'chat') + '.txt';
-  a.click();
-  URL.revokeObjectURL(a.href);
 };
 
 form.addEventListener('submit', async (e) => {
