@@ -58,10 +58,11 @@
     <div id="sidebar">
       <header>
         <button id="new-chat">+ New Chat</button>
-        <div id="credits">Credits: ...</div>
+        <button id="export-chat">Export</button>
       </header>
       <ul id="conv-list"></ul>
       <footer>
+        <div id="credits">Credits: ...</div>
         <div><a href="/preferences" style="color:#fff">Preferences</a></div>
         <div><a href="/logout" style="color:#fff">Logout</a></div>
       </footer>
@@ -100,13 +101,14 @@ function renderConversations() {
     li.className = c.id === currentId ? 'active' : '';
     const span = document.createElement('span');
     span.textContent = c.name;
-    span.ondblclick = () => {
+    span.oncontextmenu = (e) => {
+      e.preventDefault();
       const n = prompt('Rename chat', c.name);
       if (n) { c.name = n; save(); renderConversations(); }
     };
     li.appendChild(span);
     const del = document.createElement('button');
-    del.textContent = '✖';
+    del.textContent = '🗑';
     del.onclick = (e) => {
       e.stopPropagation();
       conversations = conversations.filter(x => x.id !== c.id);
@@ -137,6 +139,17 @@ function newChat() {
 }
 
 document.getElementById('new-chat').onclick = newChat;
+document.getElementById('export-chat').onclick = () => {
+  const conv = conversations.find(c => c.id === currentId);
+  if (!conv) return;
+  const lines = conv.messages.map(m => `${m.role}: ${m.text}`);
+  const blob = new Blob([lines.join('\n')], {type: 'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (conv.name || 'chat') + '.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
