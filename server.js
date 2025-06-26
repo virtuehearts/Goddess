@@ -57,11 +57,15 @@ function updateMemories(userId, text) {
 // Extract internal notes like *(note)* from LLM output
 function parseThoughts(text) {
   const thoughts = [];
-  const clean = text.replace(/\*\([^)]*\)\*/g, (m) => {
+  let clean = text.replace(/\*\([^)]*\)\*/g, (m) => {
     const inner = m.slice(1, -1).trim();
     if (inner) thoughts.push(inner.replace(/^\(|\)$/g, ''));
     return '';
   }).replace(/\s{2,}/g, ' ').trim();
+  if ((clean.startsWith('"') && clean.endsWith('"')) ||
+      (clean.startsWith("'") && clean.endsWith("'"))) {
+    clean = clean.slice(1, -1).trim();
+  }
   return { clean, thoughts };
 }
 
