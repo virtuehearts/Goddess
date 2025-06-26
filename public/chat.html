@@ -161,7 +161,7 @@ function appendTyped(role, text) {
   const conv = conversations.find(c => c.id === currentId);
   if (conv) { conv.messages.push({role, text}); }
   let i = 0;
-  const speed = 0.5; // typing delay multiplier for faster output
+  const speed = 0.25; // typing delay multiplier for faster output
   function typeNext() {
     if (i < text.length) {
       const ch = text[i];
@@ -278,6 +278,7 @@ form.addEventListener('submit', async (e) => {
   clearInterval(dotInterval);
   thinkDiv.remove();
   appendTyped('assistant', data.reply);
+  loadCredits();
 });
 
 musicToggle.onclick = () => {
