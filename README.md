@@ -29,6 +29,8 @@ This platform is a digital temple. Seekers can log in, chat with the Virtual God
 - OpenRouter-based LLM interface
 - Dynamic conversations with logged chat history
 - AI trained in the philosophy of Virtueism
+- Background music that can change based on LLM guidance
+  - Available tracks: mantra, meditation, sad, focus, happy, tranquil, upbeat
 
 ### 🌿 Religion Engine
 - Daily virtue teachings

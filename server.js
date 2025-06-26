@@ -58,16 +58,44 @@ function updateMemories(userId, text) {
 // Extract internal notes like *(note)* from LLM output
 function parseThoughts(text) {
   const thoughts = [];
-  let clean = text.replace(/\*\([^)]*\)\*/g, (m) => {
-    const inner = m.slice(1, -1).trim();
-    if (inner) thoughts.push(inner.replace(/^\(|\)$/g, ''));
-    return '';
-  }).replace(/\s{2,}/g, ' ').trim();
+  const starPattern = /\*\([^)]*\)\*/g;
+  const notePattern = /\((?:\s*(?:note|ooc|thought|aside)[^)]*)\)/gi;
+  const bracketPattern = /\[(?:\s*(?:note|ooc|thought|aside)[^\]]*)\]/gi;
+
+  let clean = text
+    .replace(starPattern, m => {
+      const inner = m.slice(1, -1).trim();
+      if (inner) thoughts.push(inner.replace(/^\(|\)$/g, ''));
+      return '';
+    })
+    .replace(notePattern, m => {
+      const inner = m.slice(1, -1).trim();
+      if (inner) thoughts.push(inner);
+      return '';
+    })
+    .replace(bracketPattern, m => {
+      const inner = m.slice(1, -1).trim();
+      if (inner) thoughts.push(inner);
+      return '';
+    })
+    .replace(/\s{2,}/g, ' ') // collapse extra spaces
+    .trim();
+
   if ((clean.startsWith('"') && clean.endsWith('"')) ||
       (clean.startsWith("'") && clean.endsWith("'"))) {
     clean = clean.slice(1, -1).trim();
   }
+
   return { clean, thoughts };
+}
+
+function extractCommand(text) {
+  let track = null;
+  let clean = text.replace(/\[(?:play|audio):([^\]]+)\]/i, (_, t) => {
+    track = t.trim();
+    return '';
+  }).trim();
+  return { text: clean, track };
 }
 
 dotenv.config();
@@ -194,7 +222,7 @@ app.post('/conversations/:id/rename', ensureAuth, (req, res) => {
   const name = req.body.name || 'New Chat';
   db.run('UPDATE conversations SET name = ? WHERE id = ? AND user_id = ?', [name, convId, userId], function(err){
     if (err) return res.status(500).send('Error');
-    res.sendStatus(200);
+    res.json({ success: true });
   });
 });
 
@@ -293,11 +321,12 @@ app.post('/chat', ensureAuth, async (req, res) => {
           if (!reply) reply = '...';
           reply = reply.replace(/—/g, '-');
           const { clean, thoughts } = parseThoughts(reply);
+          const { text: finalText, track } = extractCommand(clean);
           thoughts.forEach(t => {
             db.run('INSERT INTO thoughts (user_id, conversation_id, thought) VALUES (?,?,?)', [userId, conversationId, t]);
           });
-          db.run('INSERT INTO messages (user_id, conversation_id, is_user, message) VALUES (?,?,?,?)', [userId, conversationId, 0, clean]);
-          res.json({ reply: clean });
+          db.run('INSERT INTO messages (user_id, conversation_id, is_user, message) VALUES (?,?,?,?)', [userId, conversationId, 0, finalText]);
+          res.json({ reply: finalText, track });
         } catch(e) {
           console.error(e);
           res.status(500).send('Error contacting OpenRouter');
