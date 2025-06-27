@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mya Chat - virtueism.org</title>
+  <base href="%BASE_PATH%/">
   <style>
     body, html {
       margin: 0;
@@ -115,8 +116,8 @@
       <ul id="conv-list"></ul>
       <footer>
         <div id="credits">Credits: ...</div>
-        <div><a href="/preferences" style="color:#fff">Preferences</a></div>
-        <div><a href="/logout" style="color:#fff">Logout</a></div>
+        <div><a href="preferences" style="color:#fff">Preferences</a></div>
+        <div><a href="logout" style="color:#fff">Logout</a></div>
       </footer>
     </div>
     <div id="chat-area">
@@ -197,7 +198,7 @@ async function fetchJSON(url, opts) {
     res.status === 403 ||
     (res.redirected && res.url.includes('/login'))
   ) {
-    window.location = '/login';
+    window.location = 'login';
     throw new Error('Login required');
   }
   if (!res.ok) {
@@ -210,7 +211,7 @@ async function fetchJSON(url, opts) {
 }
 
 async function fetchConversations() {
-  const data = await fetchJSON('/conversations');
+  const data = await fetchJSON('conversations');
   conversations = data.map(c => ({ id: c.id, name: c.name, messages: [] }));
   currentId = conversations[0]?.id || null;
   renderConversations();
@@ -284,7 +285,7 @@ function loadConversation() {
   const conv = conversations.find(c => c.id === currentId);
   if (!conv) return;
   if (!conv.messages.length) {
-    fetchJSON(`/conversations/${currentId}/messages`).then(rows => {
+    fetchJSON(`conversations/${currentId}/messages`).then(rows => {
       conv.messages = rows.map(m => ({ role: m.is_user ? 'user' : 'assistant', text: m.message }));
       conv.messages.forEach(m => append(m.role, m.text, false));
     });
@@ -294,7 +295,7 @@ function loadConversation() {
 }
 
 async function newChat() {
-  const data = await fetchJSON('/conversations', {
+  const data = await fetchJSON('conversations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: 'New Chat' })
@@ -311,7 +312,7 @@ ctxRename.onclick = () => {
   const n = prompt('Rename chat', conv.name);
   if (n) {
     conv.name = n;
-    fetchJSON(`/conversations/${ctxTarget}/rename`, {
+    fetchJSON(`conversations/${ctxTarget}/rename`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: n })
@@ -373,7 +374,7 @@ form.addEventListener('submit', async (e) => {
     thinkDiv.textContent = 'Mya is thinking' + '.'.repeat(dots);
   }, 500);
 
-  const data = await fetchJSON('/chat', {
+  const data = await fetchJSON('chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message: text, conversationId: currentId })
@@ -396,7 +397,7 @@ musicToggle.onclick = () => {
 };
 
 async function loadCredits() {
-  const data = await fetchJSON('/credits');
+  const data = await fetchJSON('credits');
   document.getElementById('credits').textContent = 'Credits: ' + data.credits;
 }
 loadCredits();

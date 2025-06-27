@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Preferences - virtueism.org</title>
+  <base href="%BASE_PATH%/">
   <style>
     body { font-family: Arial, sans-serif; padding: 2rem; background:#f7f7f7; }
   </style>
@@ -16,26 +17,26 @@
     <p>Credits: <span id="credits"></span></p>
   </div>
   <button id="donate">Donate</button>
-  <div style="margin-top:1rem"><a href="/chat">Back to Chat</a></div>
+  <div style="margin-top:1rem"><a href="./">Back to Chat</a></div>
   <script>
     async function fetchJSON(url, opts) {
       const res = await fetch(url, opts);
       const type = res.headers.get('content-type') || '';
       if (!res.ok || !type.includes('application/json')) {
-        window.location = '/login';
+        window.location = 'login';
         throw new Error('Login required');
       }
       return res.json();
     }
 
-    fetchJSON('/me').then(u => {
+    fetchJSON('me').then(u => {
       if(!u) return;
       document.getElementById('email').textContent = u.email;
       document.getElementById('join').textContent = u.created_at?.slice(0,10) || '';
       document.getElementById('credits').textContent = u.credits;
     });
     document.getElementById('donate').onclick = () => {
-      window.location = '/treasury';
+      window.location = 'treasury';
     };
   </script>
 </body>

@@ -3,6 +3,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
+const fs = require('fs');
 
 // Support environments where global fetch is not available
 const fetch =
@@ -115,29 +116,45 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const BASE_PATH = process.env.BASE_PATH || '';
+
+function withBase(p) {
+  return `${BASE_PATH}${p}`;
+}
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(session({ secret: 'goddess-secret', resave: false, saveUninitialized: false }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(BASE_PATH, express.static(path.join(__dirname, 'public')));
 
 init();
 seedAdmin(process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD);
 
 function ensureAuth(req, res, next) {
   if (req.session.userId) return next();
-  res.redirect('/login');
+  res.redirect(withBase('/login'));
 }
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+function sendHtml(res, file) {
+  fs.readFile(path.join(__dirname, 'public', file), 'utf8', (err, data) => {
+    if (err) return res.status(500).send('Error');
+    res.set('Content-Type', 'text/html');
+    res.send(data.replace(/%BASE_PATH%/g, BASE_PATH));
+  });
+}
+
+app.get(BASE_PATH === '' ? '/' : BASE_PATH, (req, res) => {
+  sendHtml(res, 'index.html');
+});
+if (BASE_PATH) {
+  app.get(withBase('/'), (req, res) => sendHtml(res, 'index.html'));
+}
+
+app.get(withBase('/login'), (req, res) => {
+  sendHtml(res, 'login.html');
 });
 
-app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
-app.post('/login', (req, res) => {
+app.post(withBase('/login'), (req, res) => {
   const { email, password } = req.body;
   db.get('SELECT * FROM users WHERE email = ?', [email], (err, user) => {
     if (err || !user) return res.send('Invalid credentials');
@@ -145,7 +162,7 @@ app.post('/login', (req, res) => {
       if (result) {
         req.session.userId = user.id;
         refreshCredits(user.id, () => {
-          res.redirect('/chat');
+          res.redirect(withBase('/chat'));
         });
       } else {
         res.send('Invalid credentials');
@@ -154,11 +171,11 @@ app.post('/login', (req, res) => {
   });
 });
 
-app.get('/register', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'register.html'));
+app.get(withBase('/register'), (req, res) => {
+  sendHtml(res, 'register.html');
 });
 
-app.post('/register', (req, res) => {
+app.post(withBase('/register'), (req, res) => {
   const { email, password } = req.body;
   bcrypt.hash(password, 10, (err, hash) => {
     if (err) return res.send('Error registering');
@@ -167,33 +184,33 @@ app.post('/register', (req, res) => {
         if (err) return res.send('Error registering');
         req.session.userId = this.lastID;
         refreshCredits(this.lastID, () => {
-          res.redirect('/chat');
+          res.redirect(withBase('/chat'));
         });
       });
   });
 });
 
-app.get('/logout', (req, res) => {
+app.get(withBase('/logout'), (req, res) => {
   req.session.destroy(() => {
-    res.redirect('/login');
+    res.redirect(withBase('/login'));
   });
 });
 
-app.get('/preferences', ensureAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'preferences.html'));
+app.get(withBase('/preferences'), ensureAuth, (req, res) => {
+  sendHtml(res, 'preferences.html');
 });
 
-app.get('/chat', ensureAuth, (req, res) => {
+app.get(withBase('/chat'), ensureAuth, (req, res) => {
   refreshCredits(req.session.userId, () => {
-    res.sendFile(path.join(__dirname, 'public', 'chat.html'));
+    sendHtml(res, 'chat.html');
   });
 });
 
-app.get('/treasury', ensureAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'treasury.html'));
+app.get(withBase('/treasury'), ensureAuth, (req, res) => {
+  sendHtml(res, 'treasury.html');
 });
 
-app.get('/credits', ensureAuth, (req, res) => {
+app.get(withBase('/credits'), ensureAuth, (req, res) => {
   const userId = req.session.userId;
   refreshCredits(userId, (err, user) => {
     if (err) return res.status(500).send('Error');
@@ -201,7 +218,7 @@ app.get('/credits', ensureAuth, (req, res) => {
   });
 });
 
-app.get('/me', ensureAuth, (req, res) => {
+app.get(withBase('/me'), ensureAuth, (req, res) => {
   const userId = req.session.userId;
   refreshCredits(userId, () => {
     db.get('SELECT email, created_at, credits, unlimited_credits FROM users WHERE id = ?', [userId], (err, row) => {
@@ -212,7 +229,7 @@ app.get('/me', ensureAuth, (req, res) => {
   });
 });
 
-app.get('/conversations', ensureAuth, (req, res) => {
+app.get(withBase('/conversations'), ensureAuth, (req, res) => {
   const userId = req.session.userId;
   db.all('SELECT id, name FROM conversations WHERE user_id = ? ORDER BY id DESC', [userId], (err, rows) => {
     if (err) return res.status(500).send('Error');
@@ -220,7 +237,7 @@ app.get('/conversations', ensureAuth, (req, res) => {
   });
 });
 
-app.post('/conversations', ensureAuth, (req, res) => {
+app.post(withBase('/conversations'), ensureAuth, (req, res) => {
   const userId = req.session.userId;
   const name = req.body.name || 'New Chat';
   db.run('INSERT INTO conversations (user_id, name) VALUES (?,?)', [userId, name], function(err){
@@ -229,7 +246,7 @@ app.post('/conversations', ensureAuth, (req, res) => {
   });
 });
 
-app.post('/conversations/:id/rename', ensureAuth, (req, res) => {
+app.post(withBase('/conversations/:id/rename'), ensureAuth, (req, res) => {
   const userId = req.session.userId;
   const convId = req.params.id;
   const name = req.body.name || 'New Chat';
@@ -239,7 +256,7 @@ app.post('/conversations/:id/rename', ensureAuth, (req, res) => {
   });
 });
 
-app.get('/conversations/:id/messages', ensureAuth, (req, res) => {
+app.get(withBase('/conversations/:id/messages'), ensureAuth, (req, res) => {
   const userId = req.session.userId;
   const convId = req.params.id;
   db.all('SELECT is_user, message FROM messages WHERE user_id=? AND conversation_id=? ORDER BY id ASC', [userId, convId], (err, rows) => {
@@ -249,7 +266,7 @@ app.get('/conversations/:id/messages', ensureAuth, (req, res) => {
 });
 
 // simple endpoint to mark a user as donated
-app.post('/donated', ensureAuth, (req, res) => {
+app.post(withBase('/donated'), ensureAuth, (req, res) => {
   const userId = req.session.userId;
   db.run('UPDATE users SET unlimited_credits = 1 WHERE id = ?', [userId], err => {
     if (err) return res.status(500).send('Error');
@@ -257,7 +274,7 @@ app.post('/donated', ensureAuth, (req, res) => {
   });
 });
 
-app.post('/chat', ensureAuth, async (req, res) => {
+app.post(withBase('/chat'), ensureAuth, async (req, res) => {
   const userId = req.session.userId;
   const conversationId = req.body.conversationId;
   const userMessage = req.body.message;
@@ -354,7 +371,7 @@ app.post('/chat', ensureAuth, async (req, res) => {
   });
 });
 
-app.post('/tasks', ensureAuth, (req, res) => {
+app.post(withBase('/tasks'), ensureAuth, (req, res) => {
   const { task } = req.body;
   const userId = req.session.userId;
   db.run('INSERT INTO tasks (user_id, task) VALUES (?,?)', [userId, task], err => {
@@ -363,7 +380,7 @@ app.post('/tasks', ensureAuth, (req, res) => {
   });
 });
 
-app.get('/tasks', ensureAuth, (req, res) => {
+app.get(withBase('/tasks'), ensureAuth, (req, res) => {
   const userId = req.session.userId;
   db.all('SELECT id, task, completed FROM tasks WHERE user_id = ?', [userId], (err, rows) => {
     if (err) return res.status(500).send('Error fetching tasks');
@@ -371,7 +388,7 @@ app.get('/tasks', ensureAuth, (req, res) => {
   });
 });
 
-app.post('/tasks/:id/complete', ensureAuth, (req, res) => {
+app.post(withBase('/tasks/:id/complete'), ensureAuth, (req, res) => {
   const userId = req.session.userId;
   const id = req.params.id;
   db.run('UPDATE tasks SET completed = 1 WHERE id = ? AND user_id = ?', [id, userId], err => {
