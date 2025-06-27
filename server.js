@@ -116,7 +116,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BASE_PATH = process.env.BASE_PATH || '';
+const BASE_PATH = process.env.BASE_PATH || '/chat';
 
 function withBase(p) {
   return `${BASE_PATH}${p}`;
