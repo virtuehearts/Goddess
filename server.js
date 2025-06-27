@@ -116,7 +116,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BASE_PATH = process.env.BASE_PATH || '/chat';
+const BASE_PATH = (process.env.BASE_PATH || '/chat').replace(/\/+$/, '');
 
 function withBase(p) {
   return `${BASE_PATH}${p}`;
@@ -129,6 +129,10 @@ app.use(BASE_PATH, express.static(path.join(__dirname, 'public')));
 
 init();
 seedAdmin(process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD);
+
+if (BASE_PATH) {
+  app.get('/', (req, res) => res.redirect(BASE_PATH));
+}
 
 function ensureAuth(req, res, next) {
   if (req.session.userId) return next();
