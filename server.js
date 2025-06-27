@@ -115,7 +115,8 @@ function detectTags(text) {
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Default to port 3001 so it matches the nginx configuration
+const PORT = process.env.PORT || 3001;
 const BASE_PATH = (process.env.BASE_PATH || '/chat').replace(/\/+$/, '');
 
 function withBase(p) {
