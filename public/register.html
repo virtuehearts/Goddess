@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Register - virtueism.org</title>
+  <base href="%BASE_PATH%/">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
   <style>
     :root {
@@ -129,7 +130,7 @@
     </div>
 
     <div class="form-cell">
-      <form action="/register" method="post">
+      <form action="register" method="post">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required>
         <label for="password">Password</label>
@@ -139,7 +140,7 @@
     </div>
 
     <div class="footer">
-      <a href="/login">Already have an account? Login</a>
+      <a href="login">Already have an account? Login</a>
     </div>
   </div>
 </body>
