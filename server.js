@@ -129,7 +129,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    path: BASE_PATH || '/',
+    // Always use root path for the session cookie to avoid
+    // redirect loops when the app is served from a subpath
+    path: '/',
     sameSite: 'lax'
   }
 }));
