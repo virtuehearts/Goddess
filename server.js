@@ -124,7 +124,15 @@ function withBase(p) {
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(session({ secret: 'goddess-secret', resave: false, saveUninitialized: false }));
+app.use(session({
+  secret: 'goddess-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    path: BASE_PATH || '/',
+    sameSite: 'lax'
+  }
+}));
 app.use(BASE_PATH, express.static(path.join(__dirname, 'public')));
 
 init();
