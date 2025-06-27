@@ -76,6 +76,8 @@ EMAIL_SMTP_PORT=465
 EMAIL_USER=your@email.com
 EMAIL_PASS=securepassword
 FRONTEND_URL=https://virtueism.org
+PORT=3001
+BASE_PATH=/chat
 ```
 
 ---

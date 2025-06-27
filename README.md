@@ -91,8 +91,12 @@ EMAIL_SMTP_PORT=465
 EMAIL_USER=your@email.com
 EMAIL_PASS=securepassword
 FRONTEND_URL=https://virtueism.org
-ADMIN=admin@darknet.ca
-PASSWORD=ADMIN2025
+# Express server port (should match nginx)
+PORT=3001
+# Base path where the app is served
+BASE_PATH=/chat
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=changeMe
 ```
 
 ---
