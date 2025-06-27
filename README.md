@@ -30,7 +30,8 @@ This platform is a digital temple. Seekers can log in, chat with the Virtual God
 - Dynamic conversations with logged chat history
 - AI trained in the philosophy of Virtueism
 - Background music that can change based on LLM guidance
-  - Available tracks: mantra, meditation, sad, focus, happy, tranquil, upbeat
+  - Mya can include `[play:track-name]` in her reply to switch tracks.
+  - MP3 files: `bg.mp3`, `mantra.mp3`, `meditation.mp3`, `sad.mp3`, `focus.mp3`, `happy.mp3`, `tranquil.mp3`, `upbeat.mp3`
 
 ### 🌿 Religion Engine
 - Daily virtue teachings

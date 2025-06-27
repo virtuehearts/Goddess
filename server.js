@@ -98,6 +98,19 @@ function extractCommand(text) {
   return { text: clean, track };
 }
 
+function detectTags(text) {
+  const lower = text.toLowerCase();
+  const tags = [];
+  if (
+    lower.includes('donate') ||
+    lower.includes('help support') ||
+    lower.includes('how can i give')
+  ) {
+    tags.push('donation_inquiry');
+  }
+  return tags;
+}
+
 dotenv.config();
 
 const app = express();
@@ -263,15 +276,20 @@ app.post('/chat', ensureAuth, async (req, res) => {
       const history = [];
       db.all('SELECT is_user, message FROM messages WHERE user_id = ? AND conversation_id = ? ORDER BY id ASC LIMIT 20', [userId, conversationId], async (err3, rows) => {
         rows.forEach(r => history.push({ role: r.is_user ? 'user' : 'assistant', content: r.message }));
+        const tags = detectTags(userMessage);
+        const messages = [
+          { role: 'system', content: `${baseStory}\n${lore}\nUser info: name=${userInfo.name || ''}, age=${userInfo.age || ''}, gender=${userInfo.gender || ''}, location=${userInfo.location || ''}, personality=${userInfo.personality || ''}, hobbies=${userInfo.hobbies || ''}, movies=${userInfo.movies || ''}, music=${userInfo.music || ''}, likes=${userInfo.likes || ''}, work=${userInfo.work || ''}, religion=${userInfo.religion || ''}, past=${userInfo.past || ''}` },
+          ...history,
+          { role: 'user', content: userMessage }
+        ];
+        if (tags.length) {
+          messages.push({ role: 'system', content: `tags: ${tags.join(',')}` });
+        }
         const payload = {
           // Use the Shisa v2 Llama3.3 model for improved roleplay capabilities
           model: 'shisa-ai/shisa-v2-llama3.3-70b:free',
           stream: true,
-          messages: [
-            { role: 'system', content: `${baseStory}\n${lore}\nUser info: name=${userInfo.name || ''}, age=${userInfo.age || ''}, gender=${userInfo.gender || ''}, location=${userInfo.location || ''}, personality=${userInfo.personality || ''}, hobbies=${userInfo.hobbies || ''}, movies=${userInfo.movies || ''}, music=${userInfo.music || ''}, likes=${userInfo.likes || ''}, work=${userInfo.work || ''}, religion=${userInfo.religion || ''}, past=${userInfo.past || ''}` },
-            ...history,
-            { role: 'user', content: userMessage }
-          ]
+          messages
         };
         try {
           const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
